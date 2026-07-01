@@ -2,7 +2,7 @@
 
 Pokémon TCG intelligence feed — see `docs/01_PRODUCT_VISION.md`, `docs/02_PRD.md`, and `docs/03_ROADMAP.md` for what this is and the build order. Build strictly follows the roadmap, phase by phase.
 
-**Status: Phase 4 (read-only dashboard)** — data spine, digest generator, email/SMS/Discord delivery, signup flow, and a browsable Next.js dashboard rendering the same data as the digest.
+**Status: Phase 5 (personal portfolio layer)** — data spine, digest generator, email/SMS/Discord delivery, signup flow, browsable dashboard, and a token-gated portfolio (holdings, P&L, personalized digest line).
 
 ## Local dev
 
@@ -69,6 +69,14 @@ Visit `http://localhost:3000`. It's a read-only view of the same `/api/digest-da
 
 Modern glassmorphic UI with 4 selectable pastel themes (Xatu default, Pikachu, Clefairy, Azumarill), persisted to `localStorage`. Top Movers splits into Cards/Packs tabs. Clicking any card/pack row expands a [liveline](https://www.npmjs.com/package/liveline)-powered price history chart, backed by `GET /api/price-history`. Card/product thumbnails come from TCGPlayer's catalog `imageUrl` when a real `TCGPLAYER_CLIENT_ID`/`SECRET` is configured; otherwise rows show a placeholder icon (stub price source doesn't set images).
 
+### Portfolio
+
+Every subscriber gets a permanent, unguessable `portfolio_token` at signup (separate from their unsubscribe token, so leaking one link can't do the other's job) — no passwords, consistent with the rest of the app's magic-link approach. The link is shown on the signup confirmation page and in the footer of every digest ("Your portfolio: ...").
+
+Visit `http://localhost:3000/portfolio?token=<portfolio_token>` to add holdings (search the existing card/sealed-product catalog, set quantity/price paid/date), see live P&L against the latest ingested price, and remove holdings. `GET /api/portfolio`, `POST /api/portfolio/holdings`, and `DELETE /api/portfolio/holdings/{id}` are all gated on that token.
+
+Subscribers with at least one holding get a personalized line folded into their digest — the single biggest mover among their holdings this period (e.g. "Your Charizard ex is up 12.3% this period (+$45.20)."). Computed per-subscriber in `app/digest/personal.py`, reusing the same price-move calculation the digest and dashboard already share.
+
 ## Repo structure
 
 ```
@@ -81,9 +89,10 @@ backend/
     digest/            # digest generator + text/HTML renderers
     delivery/            # email/SMS/Discord notifiers + magic-link/OTP senders
     jobs/                  # scheduled ingestion + digest send jobs
-    api/                     # signup/confirm/unsubscribe/dashboard routes + landing page template
+    api/                     # signup/confirm/unsubscribe/dashboard/portfolio routes + landing page template
   alembic/                    # migrations
-frontend/                        # Next.js 14 App Router dashboard (Phase 4+)
-  app/                            # dashboard page + layout
-  lib/                             # API client / types shared with backend DigestData
+frontend/                        # Next.js 14 App Router (Phase 4+)
+  app/                            # dashboard page + layout + theme system
+  app/portfolio/                   # token-gated portfolio page (Phase 5)
+  lib/                               # API client / types shared with backend DigestData
 ```

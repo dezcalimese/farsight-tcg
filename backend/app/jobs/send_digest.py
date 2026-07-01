@@ -8,6 +8,7 @@ from app.db.models import Subscriber
 from app.db.session import async_session_factory
 from app.delivery import get_discord_notifier, get_email_notifier, get_sms_notifier
 from app.digest.generator import generate_digest
+from app.digest.personal import get_personal_highlight
 from app.digest.render_html import render_html
 from app.digest.render_text import render_text
 
@@ -46,8 +47,14 @@ async def send_digest_for_cadence(
         failed = 0
         for subscriber in subscribers:
             unsubscribe_url = f"{settings.base_url}/api/unsubscribe?token={subscriber.unsubscribe_token}"
-            text_body = render_text(digest, unsubscribe_url=unsubscribe_url)
-            html_body = render_html(digest, unsubscribe_url=unsubscribe_url)
+            portfolio_url = f"{settings.frontend_origin}/portfolio?token={subscriber.portfolio_token}"
+            personal_line = await get_personal_highlight(session, subscriber.id, period_days)
+            text_body = render_text(
+                digest, unsubscribe_url=unsubscribe_url, portfolio_url=portfolio_url, personal_line=personal_line
+            )
+            html_body = render_html(
+                digest, unsubscribe_url=unsubscribe_url, portfolio_url=portfolio_url, personal_line=personal_line
+            )
 
             if subscriber.channel == "email":
                 ok = await email_notifier.send_digest(subscriber.email, subject, text_body, html_body)

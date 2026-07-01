@@ -126,6 +126,35 @@ class Subscriber(Base):
     confirm_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True, index=True)
     confirm_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     unsubscribe_token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    # Permanent capability token for the portfolio page — deliberately separate
+    # from unsubscribe_token so leaking one link can't do the other's job.
+    portfolio_token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    holdings: Mapped[list["Holding"]] = relationship(back_populates="subscriber", cascade="all, delete-orphan")
+
+
+class Holding(Base):
+    __tablename__ = "holdings"
+    __table_args__ = (
+        CheckConstraint("(card_id IS NOT NULL) != (sealed_product_id IS NOT NULL)", name="holding_exactly_one_item"),
+        CheckConstraint("quantity > 0", name="holding_quantity_positive"),
+        CheckConstraint("purchase_price >= 0", name="holding_purchase_price_nonnegative"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    subscriber_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("subscribers.id"), index=True)
+    card_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("cards.id"), nullable=True, index=True)
+    sealed_product_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sealed_products.id"), nullable=True, index=True
+    )
+    quantity: Mapped[int] = mapped_column(default=1)
+    purchase_price: Mapped[float] = mapped_column(Numeric(10, 2))
+    purchase_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    subscriber: Mapped[Subscriber] = relationship(back_populates="holdings")
+    card: Mapped[Card | None] = relationship()
+    sealed_product: Mapped[SealedProduct | None] = relationship()

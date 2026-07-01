@@ -22,3 +22,4 @@ class ConfirmOtpRequest(BaseModel):
 class SignupResponse(BaseModel):
     status: str
     channel: str
+    portfolio_token: str | None = None

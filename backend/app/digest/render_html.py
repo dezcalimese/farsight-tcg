@@ -10,7 +10,12 @@ _env = Environment(loader=FileSystemLoader(_TEMPLATES_DIR), autoescape=select_au
 _PERIOD_LABEL = {1: "Today", 7: "This Week"}
 
 
-def render_html(digest: DigestData, unsubscribe_url: str | None = None) -> str:
+def render_html(
+    digest: DigestData,
+    unsubscribe_url: str | None = None,
+    portfolio_url: str | None = None,
+    personal_line: str | None = None,
+) -> str:
     template = _env.get_template("digest.html.j2")
     return template.render(
         period_label=_PERIOD_LABEL.get(digest.period_days, f"Last {digest.period_days} Days"),
@@ -21,4 +26,6 @@ def render_html(digest: DigestData, unsubscribe_url: str | None = None) -> str:
         restocks=digest.restocks,
         news=digest.news,
         unsubscribe_url=unsubscribe_url,
+        portfolio_url=portfolio_url,
+        personal_line=personal_line,
     )

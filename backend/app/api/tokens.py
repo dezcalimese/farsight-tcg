@@ -11,3 +11,7 @@ def generate_otp() -> str:
 
 def generate_unsubscribe_token() -> str:
     return secrets.token_urlsafe(32)
+
+
+def generate_portfolio_token() -> str:
+    return secrets.token_urlsafe(32)

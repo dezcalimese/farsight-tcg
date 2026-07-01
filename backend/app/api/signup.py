@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas import ConfirmOtpRequest, SignupRequest, SignupResponse
-from app.api.tokens import generate_confirm_token, generate_otp, generate_unsubscribe_token
+from app.api.tokens import generate_confirm_token, generate_otp, generate_portfolio_token, generate_unsubscribe_token
 from app.config import Settings, get_settings
 from app.db.models import Subscriber
 from app.db.session import get_session
@@ -69,6 +69,7 @@ async def signup(
             cadence=body.cadence,
             status="pending_verification",
             unsubscribe_token=generate_unsubscribe_token(),
+            portfolio_token=generate_portfolio_token(),
         )
         if body.channel == "email":
             subscriber.email = contact
@@ -98,7 +99,11 @@ async def signup(
 
 
 @router.get("/confirm", response_class=HTMLResponse)
-async def confirm(token: str, session: AsyncSession = Depends(get_session)) -> HTMLResponse:
+async def confirm(
+    token: str,
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> HTMLResponse:
     now = datetime.now(timezone.utc)
     result = await session.execute(select(Subscriber).where(Subscriber.confirm_token == token))
     subscriber = result.scalar_one_or_none()
@@ -112,8 +117,10 @@ async def confirm(token: str, session: AsyncSession = Depends(get_session)) -> H
     subscriber.confirm_token_expires_at = None
     await session.commit()
 
+    portfolio_url = f"{settings.frontend_origin}/portfolio?token={subscriber.portfolio_token}"
     return _render_message(
-        f"You're in. Farsight digests will arrive by {subscriber.channel} on a {subscriber.cadence} cadence."
+        f"You're in. Farsight digests will arrive by {subscriber.channel} on a {subscriber.cadence} cadence. "
+        f'<br><br>Want to track your own cards? <a href="{portfolio_url}">Set up your portfolio</a>.'
     )
 
 
@@ -137,7 +144,7 @@ async def confirm_otp(body: ConfirmOtpRequest, session: AsyncSession = Depends(g
     subscriber.confirm_token_expires_at = None
     await session.commit()
 
-    return SignupResponse(status="active", channel="sms")
+    return SignupResponse(status="active", channel="sms", portfolio_token=subscriber.portfolio_token)
 
 
 @router.get("/unsubscribe", response_class=HTMLResponse)

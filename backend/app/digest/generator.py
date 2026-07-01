@@ -12,7 +12,7 @@ MAX_RESTOCKS = 5
 MAX_NEWS = 2
 
 
-async def _price_moves(session: AsyncSession, since: datetime) -> list[PriceMove]:
+async def compute_price_moves(session: AsyncSession, since: datetime) -> list[PriceMove]:
     result = await session.execute(
         select(PriceSnapshot, Card.name, Card.image_url, SealedProduct.name, SealedProduct.image_url)
         .outerjoin(Card, PriceSnapshot.card_id == Card.id)
@@ -103,7 +103,7 @@ async def _news_highlights(session: AsyncSession, since: datetime) -> list[NewsH
 async def generate_digest(session: AsyncSession, period_days: int = 7) -> DigestData:
     since = datetime.now(timezone.utc) - timedelta(days=period_days)
 
-    moves = await _price_moves(session, since)
+    moves = await compute_price_moves(session, since)
     gainers = sorted((m for m in moves if m.pct_change > 0), key=lambda m: m.pct_change, reverse=True)
     trending_cards = [m for m in gainers if m.item_type == "card"][:MAX_TRENDING_CARDS]
     top_movers = sorted(moves, key=lambda m: abs(m.pct_change), reverse=True)[:MAX_TOP_MOVERS]
