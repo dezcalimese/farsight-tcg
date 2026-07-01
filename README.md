@@ -2,7 +2,7 @@
 
 Pokémon TCG intelligence feed — see `docs/01_PRODUCT_VISION.md`, `docs/02_PRD.md`, and `docs/03_ROADMAP.md` for what this is and the build order. Build strictly follows the roadmap, phase by phase.
 
-**Status: Phase 3 (signup flow)** — data spine, digest generator, email/SMS/Discord delivery, and a real signup flow (landing page + magic link/OTP + unsubscribe). Full frontend still comes in Phase 4.
+**Status: Phase 4 (read-only dashboard)** — data spine, digest generator, email/SMS/Discord delivery, signup flow, and a browsable Next.js dashboard rendering the same data as the digest.
 
 ## Local dev
 
@@ -56,19 +56,32 @@ uv run alembic revision --autogenerate -m "description"
 uv run alembic upgrade head
 ```
 
+### Dashboard (frontend)
+
+```bash
+cd frontend
+cp .env.local.example .env.local   # points at the backend, defaults to localhost:8000
+bun install
+bun run dev
+```
+
+Visit `http://localhost:3000`. It's a read-only view of the same `/api/digest-data` endpoint the email/SMS digest is generated from — page-load only, no live updates, so it can never disagree with what gets sent out. The backend must be running (`uv run uvicorn app.main:app --reload` from `backend/`) with `FRONTEND_ORIGIN` set to match (default `http://localhost:3000`, already covers this).
+
 ## Repo structure
 
 ```
 backend/
   app/
-    main.py        # FastAPI app: landing page + signup API + health check
+    main.py        # FastAPI app: landing page + signup API + dashboard API + health check
     config.py       # all env vars, pydantic-settings
     db/              # SQLAlchemy models + async session
     sources/          # PriceSource / NewsSource / RestockSource interfaces + impls
     digest/            # digest generator + text/HTML renderers
     delivery/            # email/SMS/Discord notifiers + magic-link/OTP senders
     jobs/                  # scheduled ingestion + digest send jobs
-    api/                     # signup/confirm/unsubscribe routes + landing page template
+    api/                     # signup/confirm/unsubscribe/dashboard routes + landing page template
   alembic/                    # migrations
-frontend/                       # not scaffolded until Phase 4
+frontend/                        # Next.js 14 App Router dashboard (Phase 4+)
+  app/                            # dashboard page + layout
+  lib/                             # API client / types shared with backend DigestData
 ```

@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://farsight:farsight@localhost:5432/farsight"
     redis_url: str = "redis://localhost:6379/0"
     base_url: str = "http://localhost:8000"  # used to build magic-link/unsubscribe URLs
+    frontend_origin: str = "http://localhost:3000"  # allowed CORS origin for the dashboard
 
     # TCGPlayer (price source)
     tcgplayer_client_id: str | None = None
