@@ -2,14 +2,19 @@
 
 import { useEffect, useState } from "react";
 import {
+  deleteAlert,
   deleteHolding,
   getPortfolio,
+  listAlerts,
+  type AlertRule,
   type Holding,
   type Portfolio,
   PortfolioApiError,
 } from "@/lib/api";
 import { ThemeSwitcher } from "../theme-switcher";
 import { AddHoldingForm } from "./add-holding-form";
+import { AlertRuleForm } from "./alert-rule-form";
+import { AlertRuleRow } from "./alert-rule-row";
 import { HoldingRow } from "./holding-row";
 
 export default function PortfolioPage({
@@ -19,6 +24,7 @@ export default function PortfolioPage({
 }) {
   const token = searchParams.token ?? "";
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [alertRules, setAlertRules] = useState<AlertRule[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,8 +33,11 @@ export default function PortfolioPage({
       setLoading(false);
       return;
     }
-    getPortfolio(token)
-      .then(setPortfolio)
+    Promise.all([getPortfolio(token), listAlerts(token)])
+      .then(([p, alerts]) => {
+        setPortfolio(p);
+        setAlertRules(alerts);
+      })
       .catch((err) => setError(err instanceof PortfolioApiError ? err.message : "Something went wrong."))
       .finally(() => setLoading(false));
   }, [token]);
@@ -68,6 +77,15 @@ export default function PortfolioPage({
           }
         : prev
     );
+  }
+
+  function handleAlertAdded(rule: AlertRule) {
+    setAlertRules((prev) => (prev ? [rule, ...prev] : [rule]));
+  }
+
+  async function handleAlertDelete(rule: AlertRule) {
+    await deleteAlert(token, rule.id);
+    setAlertRules((prev) => (prev ? prev.filter((r) => r.id !== rule.id) : prev));
   }
 
   return (
@@ -141,7 +159,22 @@ export default function PortfolioPage({
             </div>
           )}
 
-          <AddHoldingForm token={token} onAdded={handleAdded} />
+          <div className="mb-6">
+            <AddHoldingForm token={token} onAdded={handleAdded} />
+          </div>
+
+          {alertRules && alertRules.length > 0 && (
+            <section className="mb-6">
+              <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-ink/80">Alerts</h2>
+              <div className="glass-panel overflow-hidden">
+                {alertRules.map((rule) => (
+                  <AlertRuleRow key={rule.id} rule={rule} onDelete={() => handleAlertDelete(rule)} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          <AlertRuleForm token={token} onAdded={handleAlertAdded} />
         </>
       )}
     </main>

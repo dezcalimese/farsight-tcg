@@ -7,8 +7,10 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Card, Holding, PriceSnapshot, SealedProduct, Subscriber
+from app.api.deps import get_subscriber_by_portfolio_token
+from app.db.models import Card, Holding, SealedProduct
 from app.db.session import get_session
+from app.pricing import get_latest_price
 
 router = APIRouter(prefix="/api")
 
@@ -51,27 +53,6 @@ class PortfolioOut(BaseModel):
     total_pnl: float | None
 
 
-async def _get_subscriber_by_portfolio_token(session: AsyncSession, token: str) -> Subscriber:
-    result = await session.execute(select(Subscriber).where(Subscriber.portfolio_token == token))
-    subscriber = result.scalar_one_or_none()
-    if subscriber is None:
-        raise HTTPException(404, "Invalid portfolio link.")
-    return subscriber
-
-
-async def _latest_price(session: AsyncSession, item_type: str, item_id: uuid.UUID) -> float | None:
-    column = PriceSnapshot.card_id if item_type == "card" else PriceSnapshot.sealed_product_id
-    result = await session.execute(
-        select(PriceSnapshot.market_price)
-        .where(column == item_id)
-        .where(PriceSnapshot.market_price.is_not(None))
-        .order_by(PriceSnapshot.captured_at.desc())
-        .limit(1)
-    )
-    price = result.scalar_one_or_none()
-    return float(price) if price is not None else None
-
-
 @router.get("/catalog/search", response_model=list[CatalogItem])
 async def catalog_search(q: str, session: AsyncSession = Depends(get_session)) -> list[CatalogItem]:
     if len(q.strip()) < 2:
@@ -93,7 +74,7 @@ async def catalog_search(q: str, session: AsyncSession = Depends(get_session)) -
 
 @router.get("/portfolio", response_model=PortfolioOut)
 async def get_portfolio(token: str, session: AsyncSession = Depends(get_session)) -> PortfolioOut:
-    subscriber = await _get_subscriber_by_portfolio_token(session, token)
+    subscriber = await get_subscriber_by_portfolio_token(session, token)
     result = await session.execute(
         select(Holding, Card.name, Card.image_url, SealedProduct.name, SealedProduct.image_url)
         .outerjoin(Card, Holding.card_id == Card.id)
@@ -113,7 +94,7 @@ async def get_portfolio(token: str, session: AsyncSession = Depends(get_session)
         else:
             item_type, item_name, image_url = "sealed_product", sealed_name, sealed_image
 
-        current_price = await _latest_price(session, item_type, holding.card_id or holding.sealed_product_id)
+        current_price = await get_latest_price(session, item_type, holding.card_id or holding.sealed_product_id)
         purchase_price = float(holding.purchase_price)
         cost_basis = purchase_price * holding.quantity
         total_cost += cost_basis
@@ -157,7 +138,7 @@ async def get_portfolio(token: str, session: AsyncSession = Depends(get_session)
 async def add_holding(
     token: str, body: HoldingIn, session: AsyncSession = Depends(get_session)
 ) -> HoldingOut:
-    subscriber = await _get_subscriber_by_portfolio_token(session, token)
+    subscriber = await get_subscriber_by_portfolio_token(session, token)
 
     if body.item_type == "card":
         item = (await session.execute(select(Card).where(Card.id == body.item_id))).scalar_one_or_none()
@@ -179,7 +160,7 @@ async def add_holding(
     session.add(holding)
     await session.commit()
 
-    current_price = await _latest_price(session, body.item_type, body.item_id)
+    current_price = await get_latest_price(session, body.item_type, body.item_id)
     cost_basis = body.purchase_price * body.quantity
     market_value = current_price * body.quantity if current_price is not None else None
     pnl = (market_value - cost_basis) if market_value is not None else None
@@ -205,7 +186,7 @@ async def add_holding(
 async def delete_holding(
     holding_id: uuid.UUID, token: str, session: AsyncSession = Depends(get_session)
 ) -> dict[str, bool]:
-    subscriber = await _get_subscriber_by_portfolio_token(session, token)
+    subscriber = await get_subscriber_by_portfolio_token(session, token)
     result = await session.execute(
         select(Holding).where(Holding.id == holding_id, Holding.subscriber_id == subscriber.id)
     )

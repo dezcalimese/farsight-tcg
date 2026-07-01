@@ -7,6 +7,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from app.config import get_settings
 from app.db.session import async_session_factory
+from app.jobs.alerts import evaluate_all_alerts
 from app.jobs.ingest import run_full_ingest
 from app.jobs.send_digest import send_digest_for_cadence
 
@@ -31,6 +32,11 @@ async def _send_weekly_job() -> None:
     logger.info("weekly digest send complete: %s", results)
 
 
+async def _alert_check_job() -> None:
+    results = await evaluate_all_alerts()
+    logger.info("alert check complete: %s", results)
+
+
 def build_scheduler(poll_interval_minutes: int = 30) -> AsyncIOScheduler:
     settings = get_settings()
     scheduler = AsyncIOScheduler()
@@ -48,6 +54,11 @@ def build_scheduler(poll_interval_minutes: int = 30) -> AsyncIOScheduler:
         _send_weekly_job,
         trigger=CronTrigger(day_of_week=settings.digest_send_weekday, hour=settings.digest_send_hour_utc),
         id="send_weekly_digest",
+    )
+    scheduler.add_job(
+        _alert_check_job,
+        trigger=IntervalTrigger(minutes=settings.alert_check_interval_minutes),
+        id="check_alerts",
     )
     return scheduler
 

@@ -142,3 +142,57 @@ export async function deleteHolding(token: string, holdingId: string): Promise<v
   );
   if (!res.ok) throw new PortfolioApiError("Couldn't remove that holding.");
 }
+
+export type AlertRuleType = "price_above" | "price_below" | "pct_move" | "restock";
+
+export type AlertRule = {
+  id: string;
+  rule_type: AlertRuleType;
+  item_type: "card" | "sealed_product" | null;
+  item_id: string | null;
+  item_name: string | null;
+  watch_text: string | null;
+  threshold: number | null;
+  window_hours: number;
+  last_triggered_at: string | null;
+};
+
+export async function listAlerts(token: string): Promise<AlertRule[]> {
+  const res = await fetch(`${API_URL}/api/alerts?token=${encodeURIComponent(token)}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new PortfolioApiError("Couldn't load alerts.");
+  return res.json();
+}
+
+export async function createAlert(
+  token: string,
+  body: {
+    rule_type: AlertRuleType;
+    item_type?: "card" | "sealed_product";
+    item_id?: string;
+    watch_text?: string;
+    threshold?: number;
+    window_hours?: number;
+  }
+): Promise<AlertRule> {
+  const res = await fetch(`${API_URL}/api/alerts?token=${encodeURIComponent(token)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const detail = data.detail;
+    const message = Array.isArray(detail) ? detail[0]?.msg : detail;
+    throw new PortfolioApiError(message ?? "Couldn't create that alert.");
+  }
+  return res.json();
+}
+
+export async function deleteAlert(token: string, ruleId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/alerts/${ruleId}?token=${encodeURIComponent(token)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new PortfolioApiError("Couldn't remove that alert.");
+}

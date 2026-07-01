@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     digest_send_hour_utc: int = 13
     digest_send_weekday: int = 0  # 0=Monday, for the weekly job
 
+    # Custom alerts run on their own cadence, independent of the digest schedule.
+    alert_check_interval_minutes: int = 5
+
     @property
     def news_rss_feed_list(self) -> list[str]:
         return [f.strip() for f in self.news_rss_feeds.split(",") if f.strip()]

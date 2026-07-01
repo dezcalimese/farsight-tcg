@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import dashboard, pages, portfolio, signup
+from app.api import alerts, dashboard, pages, portfolio, signup
 from app.config import get_settings
 
 logging.basicConfig(level=logging.INFO)
@@ -21,6 +21,7 @@ app.include_router(pages.router)
 app.include_router(signup.router)
 app.include_router(dashboard.router)
 app.include_router(portfolio.router)
+app.include_router(alerts.router)
 
 
 @app.get("/health")

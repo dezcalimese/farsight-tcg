@@ -134,6 +134,9 @@ class Subscriber(Base):
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     holdings: Mapped[list["Holding"]] = relationship(back_populates="subscriber", cascade="all, delete-orphan")
+    alert_rules: Mapped[list["AlertRule"]] = relationship(
+        back_populates="subscriber", cascade="all, delete-orphan"
+    )
 
 
 class Holding(Base):
@@ -156,5 +159,44 @@ class Holding(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     subscriber: Mapped[Subscriber] = relationship(back_populates="holdings")
+    card: Mapped[Card | None] = relationship()
+    sealed_product: Mapped[SealedProduct | None] = relationship()
+
+
+class AlertRule(Base):
+    __tablename__ = "alert_rules"
+    __table_args__ = (
+        CheckConstraint(
+            "rule_type IN ('price_above', 'price_below', 'pct_move', 'restock')", name="alert_rule_type_valid"
+        ),
+        CheckConstraint(
+            "card_id IS NOT NULL OR sealed_product_id IS NOT NULL OR watch_text IS NOT NULL",
+            name="alert_rule_has_target",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    subscriber_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("subscribers.id"), index=True)
+    rule_type: Mapped[str] = mapped_column(String(32))
+    card_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("cards.id"), nullable=True, index=True)
+    sealed_product_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sealed_products.id"), nullable=True, index=True
+    )
+    # Free-text substring match against RestockEvent.product_name_raw for "restock" rules.
+    watch_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Dollar threshold for price_above/price_below, percent threshold for pct_move.
+    threshold: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    # Rolling window for pct_move rules only.
+    window_hours: Mapped[int] = mapped_column(default=24)
+
+    # Edge-triggered dedupe: once fired, don't refire until the condition
+    # clears and re-triggers, so a price sitting above threshold doesn't
+    # spam an alert every evaluation cycle.
+    is_armed: Mapped[bool] = mapped_column(default=True)
+    last_triggered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    subscriber: Mapped[Subscriber] = relationship(back_populates="alert_rules")
     card: Mapped[Card | None] = relationship()
     sealed_product: Mapped[SealedProduct | None] = relationship()

@@ -2,7 +2,7 @@
 
 Pokémon TCG intelligence feed — see `docs/01_PRODUCT_VISION.md`, `docs/02_PRD.md`, and `docs/03_ROADMAP.md` for what this is and the build order. Build strictly follows the roadmap, phase by phase.
 
-**Status: Phase 5 (personal portfolio layer)** — data spine, digest generator, email/SMS/Discord delivery, signup flow, browsable dashboard, and a token-gated portfolio (holdings, P&L, personalized digest line).
+**Status: Phase 6 (custom alerts)** — data spine, digest generator, email/SMS/Discord delivery, signup flow, browsable dashboard, portfolio (holdings, P&L, personalized digest line), and a real-time alert rule engine independent of the digest schedule.
 
 ## Local dev
 
@@ -46,7 +46,7 @@ cd backend
 uv run python -m app.jobs.scheduler
 ```
 
-Polls all three sources every 30 minutes, sends the daily digest to active daily subscribers at `DIGEST_SEND_HOUR_UTC` (plus the Discord broadcast, if configured), and sends the weekly digest to active weekly subscribers on `DIGEST_SEND_WEEKDAY`. Any delivery channel without full credentials falls back to a stub that logs instead of sending.
+Polls all three sources every 30 minutes, sends the daily digest to active daily subscribers at `DIGEST_SEND_HOUR_UTC` (plus the Discord broadcast, if configured), sends the weekly digest to active weekly subscribers on `DIGEST_SEND_WEEKDAY`, and checks alert rules every `ALERT_CHECK_INTERVAL_MINUTES` (default 5) independent of the digest schedule. Any delivery channel without full credentials falls back to a stub that logs instead of sending.
 
 ### Migrations
 
@@ -76,6 +76,16 @@ Every subscriber gets a permanent, unguessable `portfolio_token` at signup (sepa
 Visit `http://localhost:3000/portfolio?token=<portfolio_token>` to add holdings (search the existing card/sealed-product catalog, set quantity/price paid/date), see live P&L against the latest ingested price, and remove holdings. `GET /api/portfolio`, `POST /api/portfolio/holdings`, and `DELETE /api/portfolio/holdings/{id}` are all gated on that token.
 
 Subscribers with at least one holding get a personalized line folded into their digest — the single biggest mover among their holdings this period (e.g. "Your Charizard ex is up 12.3% this period (+$45.20)."). Computed per-subscriber in `app/digest/personal.py`, reusing the same price-move calculation the digest and dashboard already share.
+
+### Custom alerts
+
+Set up on the portfolio page (same `portfolio_token`, no separate login). Three rule types, matching the roadmap exactly:
+
+- **Price threshold** (`price_above` / `price_below`) — fires when an item's latest price crosses your threshold
+- **% move** (`pct_move`) — fires when an item moves by more than N% within a rolling window (hours, configurable)
+- **Restock watch** (`restock`) — fires when a new restock event's product name matches your watch text
+
+`app/jobs/alerts.py` evaluates every rule on its own schedule (`ALERT_CHECK_INTERVAL_MINUTES`), completely independent of the digest cron jobs, and fires immediately through the same email/SMS notifiers the digest uses. Price/% rules are edge-triggered via an `is_armed` flag on `AlertRule` — once fired, a rule won't refire while the condition stays true; it rearms the moment the condition clears, so a real second crossing fires again. Restock rules dedupe via a `last_triggered_at` watermark instead, since restocks are discrete events rather than a continuous level.
 
 ## Repo structure
 
