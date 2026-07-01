@@ -12,6 +12,7 @@ import {
   PortfolioApiError,
 } from "@/lib/api";
 import Link from "next/link";
+import { savePortfolioToken } from "../portfolio-token";
 import { ThemeSwitcher } from "../theme-switcher";
 import { AddHoldingForm } from "./add-holding-form";
 import { AlertRuleForm } from "./alert-rule-form";
@@ -34,6 +35,7 @@ export default function PortfolioPage({
       setLoading(false);
       return;
     }
+    savePortfolioToken(token);
     Promise.all([getPortfolio(token), listAlerts(token)])
       .then(([p, alerts]) => {
         setPortfolio(p);

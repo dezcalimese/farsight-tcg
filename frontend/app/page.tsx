@@ -3,6 +3,7 @@ import { getDigestData, type Period } from "@/lib/api";
 import { EmptyState, NewsRow, RestockRow, SectionCard } from "./components";
 import { MoveRow } from "./move-row";
 import { MoversTabs } from "./movers-tabs";
+import { PortfolioLink } from "./portfolio-link";
 import { ThemeSwitcher } from "./theme-switcher";
 
 export default async function DashboardPage({
@@ -38,7 +39,10 @@ export default async function DashboardPage({
               Pokemon TCG market feed &middot; updated {generatedAt}
             </p>
           </div>
-          <ThemeSwitcher />
+          <div className="flex items-center gap-2">
+            <PortfolioLink />
+            <ThemeSwitcher />
+          </div>
         </div>
 
         <div className="flex gap-2">
