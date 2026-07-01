@@ -75,7 +75,9 @@ export default function PortfolioPage({
       <div className="glass-frame mb-6 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-heading accent-gradient-text text-2xl font-bold">My Portfolio</h1>
+            <h1 className="font-heading accent-gradient-text text-2xl font-bold">
+              My Portfolio <span className="kawaii-sparkle">💖</span>
+            </h1>
             <p className="mt-1 text-sm text-muted">Your Pokemon TCG holdings, tracked against live prices.</p>
           </div>
           <ThemeSwitcher />
@@ -84,12 +86,14 @@ export default function PortfolioPage({
 
       {!token && (
         <div className="glass-panel px-5 py-6 text-sm text-ink/80">
-          No portfolio link found. Use the &ldquo;Set up your portfolio&rdquo; link from your Farsight
-          signup confirmation or digest email/text to get here.
+          (๑•́ ₃ •̀๑) No portfolio link found. Use the &ldquo;Set up your portfolio&rdquo; link from your
+          Farsight signup confirmation or digest email/text to get here.
         </div>
       )}
 
-      {token && loading && <div className="glass-panel px-5 py-6 text-sm text-muted">Loading your portfolio...</div>}
+      {token && loading && (
+        <div className="glass-panel px-5 py-6 text-sm text-muted">Loading your portfolio... (◕‿◕)</div>
+      )}
 
       {token && !loading && error && (
         <div className="glass-panel px-5 py-6 text-sm text-loss">{error}</div>
@@ -122,7 +126,7 @@ export default function PortfolioPage({
             </div>
           </div>
 
-          {portfolio.holdings.length > 0 && (
+          {portfolio.holdings.length > 0 ? (
             <section className="mb-6">
               <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-ink/80">Holdings</h2>
               <div className="glass-panel overflow-hidden">
@@ -131,6 +135,10 @@ export default function PortfolioPage({
                 ))}
               </div>
             </section>
+          ) : (
+            <div className="glass-panel mb-6 px-5 py-6 text-center text-sm text-ink/70">
+              (｡･ω･｡) No holdings yet — add your first card or pack below!
+            </div>
           )}
 
           <AddHoldingForm token={token} onAdded={handleAdded} />

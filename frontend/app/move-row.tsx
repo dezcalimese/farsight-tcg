@@ -24,7 +24,7 @@ export function MoveRow({
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/40"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-white/50 text-ink/50">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center kawaii-thumb overflow-hidden bg-white/50 text-ink/50">
           {move.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={move.image_url} alt="" className="h-full w-full object-cover" />

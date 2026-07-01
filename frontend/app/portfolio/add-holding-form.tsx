@@ -86,7 +86,7 @@ export function AddHoldingForm({
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-white/50"
                 >
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-white/50 text-ink/50">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center kawaii-thumb overflow-hidden bg-white/50 text-ink/50">
                     {item.image_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.image_url} alt="" className="h-full w-full object-cover" />

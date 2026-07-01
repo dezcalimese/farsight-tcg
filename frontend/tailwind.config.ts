@@ -12,6 +12,9 @@ const config: Config = {
         gain: "var(--gain)",
         loss: "var(--loss)",
       },
+      fontFamily: {
+        body: ["var(--font-body)", "sans-serif"],
+      },
     },
   },
   plugins: [],

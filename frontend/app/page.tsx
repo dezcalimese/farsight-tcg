@@ -31,7 +31,9 @@ export default async function DashboardPage({
       <div className="glass-frame mb-6 p-5">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-heading accent-gradient-text text-2xl font-bold">Farsight</h1>
+            <h1 className="font-heading accent-gradient-text text-2xl font-bold">
+              Farsight <span className="kawaii-sparkle">✨</span>
+            </h1>
             <p className="mt-1 text-sm text-muted">
               Pokemon TCG market feed &middot; updated {generatedAt}
             </p>
@@ -91,7 +93,7 @@ export default async function DashboardPage({
       )}
 
       <footer className="mt-8 text-xs text-muted">
-        Want this in your inbox instead?{" "}
+        Want this in your inbox instead? (づ｡◕‿‿◕｡)づ{" "}
         <a href={process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"} className="underline">
           Sign up
         </a>

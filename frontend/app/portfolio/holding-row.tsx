@@ -8,7 +8,7 @@ export function HoldingRow({ holding, onDelete }: { holding: Holding; onDelete: 
 
   return (
     <div className="glass-panel-row flex items-center gap-3 px-4 py-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/70 bg-white/50 text-ink/50">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center kawaii-thumb overflow-hidden bg-white/50 text-ink/50">
         {holding.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={holding.image_url} alt="" className="h-full w-full object-cover" />

@@ -35,7 +35,7 @@ export function NewsRow({ news }: { news: NewsHighlight }) {
 export function EmptyState() {
   return (
     <div className="glass-panel px-5 py-6 text-sm text-ink/70">
-      No notable market activity to report right now. Check back next cycle.
+      (｡•́︿•̀｡) Nothing to report right now — check back next cycle!
     </div>
   );
 }
