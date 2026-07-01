@@ -94,18 +94,7 @@ export default function PortfolioPage({
   return (
     <main className="mx-auto max-w-xl px-3 py-6 sm:px-4 sm:py-8">
       <div className="glass-frame mb-6 p-5">
-        <div className="mb-4 flex gap-2">
-          <Link href="/" className="glass-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium">
-            ← Dashboard
-          </Link>
-          <Link
-            href={`/settings?token=${token}`}
-            className="glass-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"
-          >
-            Settings ⚙️
-          </Link>
-        </div>
-        <div className="flex items-start justify-between gap-3">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h1 className="font-heading accent-gradient-text text-2xl font-bold">
               My Portfolio <span className="kawaii-sparkle">💖</span>
@@ -113,6 +102,15 @@ export default function PortfolioPage({
             <p className="mt-1 text-sm text-muted">Your Pokemon TCG holdings, tracked against live prices.</p>
           </div>
           <ThemeSwitcher />
+        </div>
+
+        <div className="flex gap-2">
+          <Link href="/" className="glass-btn px-3 py-1.5 text-xs font-medium">
+            ← Dashboard
+          </Link>
+          <Link href={`/settings?token=${token}`} className="glass-btn px-3 py-1.5 text-xs font-medium">
+            Settings ⚙️
+          </Link>
         </div>
       </div>
 

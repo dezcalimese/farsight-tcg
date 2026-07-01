@@ -105,15 +105,7 @@ export default function SettingsPage({
   return (
     <main className="mx-auto max-w-xl px-3 py-6 sm:px-4 sm:py-8">
       <div className="glass-frame mb-6 p-5">
-        <div className="mb-4 flex gap-2">
-          <Link href="/" className="glass-btn px-3 py-1.5 text-xs font-medium">
-            ← Dashboard
-          </Link>
-          <Link href={`/portfolio?token=${token}`} className="glass-btn px-3 py-1.5 text-xs font-medium">
-            Portfolio
-          </Link>
-        </div>
-        <div className="flex items-start justify-between gap-3">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h1 className="font-heading accent-gradient-text text-2xl font-bold">
               Settings <span className="kawaii-sparkle">⚙️</span>
@@ -121,6 +113,15 @@ export default function SettingsPage({
             <p className="mt-1 text-sm text-muted">Delivery, cadence, and what shows up in your digest.</p>
           </div>
           <ThemeSwitcher />
+        </div>
+
+        <div className="flex gap-2">
+          <Link href="/" className="glass-btn px-3 py-1.5 text-xs font-medium">
+            ← Dashboard
+          </Link>
+          <Link href={`/portfolio?token=${token}`} className="glass-btn px-3 py-1.5 text-xs font-medium">
+            Portfolio
+          </Link>
         </div>
       </div>
 
