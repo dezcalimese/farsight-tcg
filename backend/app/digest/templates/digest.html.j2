@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farsight — {{ period_label }} in Pokemon TCG</title>
+</head>
+<body style="margin:0; padding:0; background-color:#0a0a12; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a12;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" style="max-width:560px;" cellpadding="0" cellspacing="0">
+
+        <tr>
+          <td style="padding-bottom:24px;">
+            <span style="font-size:20px; font-weight:700; background:linear-gradient(90deg,#7c6df0,#4f8ff0,#06b6d4); -webkit-background-clip:text; background-clip:text; color:#4f8ff0;">FARSIGHT</span>
+            <div style="color:#8a8a9a; font-size:13px; margin-top:4px;">{{ period_label }} in Pokemon TCG &middot; {{ generated_at }}</div>
+          </td>
+        </tr>
+
+        {% if is_empty %}
+        <tr>
+          <td style="background-color:#14141f; border-radius:12px; padding:20px; color:#c8c8d4; font-size:14px;">
+            No notable market activity to report right now. Check back next cycle.
+          </td>
+        </tr>
+        {% endif %}
+
+        {% if trending_cards %}
+        <tr>
+          <td style="padding:8px 0 12px;">
+            <div style="color:#e8e8f0; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding-bottom:10px;">Trending Cards</div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#14141f; border-radius:12px;">
+              {% for move in trending_cards %}
+              <tr>
+                <td style="padding:12px 16px; {% if not loop.last %}border-bottom:1px solid #22222f;{% endif %}">
+                  <div style="color:#e8e8f0; font-size:14px;">{{ move.item_name }}</div>
+                  <div style="font-family:'SF Mono',Consolas,Menlo,monospace; font-size:13px; color:{{ '#34d399' if move.pct_change >= 0 else '#f43f5e' }}; margin-top:2px;">
+                    {{ "%+.1f"|format(move.pct_change) }}% &middot; ${{ "%.2f"|format(move.price_then) }} &rarr; ${{ "%.2f"|format(move.price_now) }}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+
+        {% if top_movers %}
+        <tr>
+          <td style="padding:8px 0 12px;">
+            <div style="color:#e8e8f0; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding-bottom:10px;">Top Movers</div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#14141f; border-radius:12px;">
+              {% for move in top_movers %}
+              <tr>
+                <td style="padding:12px 16px; {% if not loop.last %}border-bottom:1px solid #22222f;{% endif %}">
+                  <div style="color:#e8e8f0; font-size:14px;">{{ move.item_name }} <span style="color:#8a8a9a; font-size:11px;">({{ move.item_type.replace('_', ' ') }})</span></div>
+                  <div style="font-family:'SF Mono',Consolas,Menlo,monospace; font-size:13px; color:{{ '#34d399' if move.pct_change >= 0 else '#f43f5e' }}; margin-top:2px;">
+                    {{ "%+.1f"|format(move.pct_change) }}% &middot; ${{ "%.2f"|format(move.price_then) }} &rarr; ${{ "%.2f"|format(move.price_now) }}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+
+        {% if restocks %}
+        <tr>
+          <td style="padding:8px 0 12px;">
+            <div style="color:#e8e8f0; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding-bottom:10px;">Restocks</div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#14141f; border-radius:12px;">
+              {% for r in restocks %}
+              <tr>
+                <td style="padding:12px 16px; {% if not loop.last %}border-bottom:1px solid #22222f;{% endif %} color:#e8e8f0; font-size:14px;">
+                  {{ r.product_name }}{% if r.retailer %} <span style="color:#8a8a9a; font-size:12px;">({{ r.retailer }})</span>{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+
+        {% if news %}
+        <tr>
+          <td style="padding:8px 0 12px;">
+            <div style="color:#e8e8f0; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding-bottom:10px;">News</div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#14141f; border-radius:12px;">
+              {% for n in news %}
+              <tr>
+                <td style="padding:12px 16px; {% if not loop.last %}border-bottom:1px solid #22222f;{% endif %}">
+                  <a href="{{ n.url }}" style="color:#4f8ff0; font-size:14px; text-decoration:none;">{{ n.title }}</a>
+                  <div style="color:#8a8a9a; font-size:11px; margin-top:2px;">{{ n.source }}</div>
+                </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </td>
+        </tr>
+        {% endif %}
+
+        <tr>
+          <td style="padding:24px 0 0; color:#5a5a6a; font-size:11px;">
+            You're getting this because you signed up for Farsight digests.
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
