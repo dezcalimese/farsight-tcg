@@ -6,16 +6,19 @@ from app.delivery.sms_twilio import TwilioSmsNotifier
 from app.delivery.stub import StubNotifier
 
 
-def get_notifiers(settings: Settings) -> list[Notifier]:
-    """Returns one notifier per configured channel. Falls back to a logging
-    stub for any channel missing credentials, so the send job never blocks
-    on missing keys."""
-    notifiers: list[Notifier] = []
+def get_email_notifier(settings: Settings) -> Notifier:
+    if settings.resend_configured:
+        return ResendEmailNotifier(settings)
+    return StubNotifier("email")
 
-    notifiers.append(ResendEmailNotifier(settings) if settings.resend_configured else StubNotifier("email"))
-    notifiers.append(TwilioSmsNotifier(settings) if settings.twilio_configured else StubNotifier("sms"))
-    notifiers.append(
-        DiscordWebhookNotifier(settings) if settings.discord_webhook_configured else StubNotifier("discord")
-    )
 
-    return notifiers
+def get_sms_notifier(settings: Settings) -> Notifier:
+    if settings.twilio_configured:
+        return TwilioSmsNotifier(settings)
+    return StubNotifier("sms")
+
+
+def get_discord_notifier(settings: Settings) -> Notifier:
+    if settings.discord_webhook_configured:
+        return DiscordWebhookNotifier(settings)
+    return StubNotifier("discord")

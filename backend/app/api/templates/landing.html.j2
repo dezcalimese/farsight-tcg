@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farsight — Pokemon TCG Intelligence Feed</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0; min-height: 100vh;
+    background-color: #0a0a12; color: #e8e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card { width: 100%; max-width: 420px; padding: 32px 20px; }
+  .wordmark {
+    font-size: 22px; font-weight: 700; margin-bottom: 4px;
+    background: linear-gradient(90deg, #7c6df0, #4f8ff0, #06b6d4);
+    -webkit-background-clip: text; background-clip: text; color: #4f8ff0;
+  }
+  .tagline { color: #8a8a9a; font-size: 14px; margin-bottom: 28px; }
+  .panel { background-color: #14141f; border-radius: 12px; padding: 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab {
+    flex: 1; text-align: center; padding: 10px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; color: #8a8a9a; background: #1c1c2a; border: 1px solid transparent;
+  }
+  .tab.active { color: #e8e8f0; border-color: #4f8ff0; }
+  input, select {
+    width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px;
+    border: 1px solid #2a2a3a; background: #0a0a12; color: #e8e8f0; font-size: 14px;
+  }
+  label { font-size: 12px; color: #8a8a9a; display: block; margin-bottom: 6px; }
+  button {
+    width: 100%; padding: 12px; border-radius: 8px; border: none;
+    background: linear-gradient(90deg, #7c6df0, #4f8ff0); color: white;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .msg { margin-top: 14px; font-size: 13px; line-height: 1.5; }
+  .msg.error { color: #f43f5e; }
+  .msg.ok { color: #34d399; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="wordmark">FARSIGHT</div>
+    <div class="tagline">Trending cards, restocks, and news — delivered on schedule. No app, no dashboard required.</div>
+
+    <div class="panel">
+      <div class="tabs">
+        <div class="tab active" data-channel="email" onclick="setChannel('email')">Email</div>
+        <div class="tab" data-channel="sms" onclick="setChannel('sms')">Text</div>
+      </div>
+
+      <form id="signup-form">
+        <label for="contact" id="contact-label">Email address</label>
+        <input id="contact" name="contact" type="email" placeholder="you@example.com" required>
+
+        <label for="cadence">Cadence</label>
+        <select id="cadence" name="cadence">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
+
+        <button type="submit" id="submit-btn">Get the digest</button>
+      </form>
+
+      <form id="otp-form" class="hidden">
+        <label for="code">We texted you a code</label>
+        <input id="code" name="code" type="text" inputmode="numeric" placeholder="123456" required>
+        <button type="submit">Confirm</button>
+      </form>
+
+      <div id="msg" class="msg"></div>
+    </div>
+  </div>
+
+<script>
+  let channel = 'email';
+  let lastContact = '';
+
+  function setChannel(c) {
+    channel = c;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.channel === c));
+    const input = document.getElementById('contact');
+    const label = document.getElementById('contact-label');
+    if (c === 'email') {
+      input.type = 'email'; input.placeholder = 'you@example.com'; label.textContent = 'Email address';
+    } else {
+      input.type = 'tel'; input.placeholder = '+15551234567'; label.textContent = 'Phone number (E.164)';
+    }
+  }
+
+  function showMsg(text, kind) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = 'msg ' + (kind || '');
+  }
+
+  document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const contact = document.getElementById('contact').value.trim();
+    const cadence = document.getElementById('cadence').value;
+    lastContact = contact;
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    showMsg('');
+    try {
+      const resp = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact, channel, cadence }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        showMsg(data.detail || 'Something went wrong.', 'error');
+        btn.disabled = false;
+        return;
+      }
+      if (data.status === 'already_active') {
+        showMsg("You're already subscribed — cadence updated.", 'ok');
+      } else if (channel === 'email') {
+        showMsg('Check your email for a confirmation link.', 'ok');
+      } else {
+        document.getElementById('signup-form').classList.add('hidden');
+        document.getElementById('otp-form').classList.remove('hidden');
+        showMsg('Enter the code we just texted you.', 'ok');
+      }
+    } catch (err) {
+      showMsg('Network error. Try again.', 'error');
+    }
+    btn.disabled = false;
+  });
+
+  document.getElementById('otp-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = document.getElementById('code').value.trim();
+    try {
+      const resp = await fetch('/api/confirm-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact: lastContact, code }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        showMsg(data.detail || 'Invalid code.', 'error');
+        return;
+      }
+      showMsg("You're in. Digests are on their way.", 'ok');
+      document.getElementById('otp-form').classList.add('hidden');
+    } catch (err) {
+      showMsg('Network error. Try again.', 'error');
+    }
+  });
+</script>
+</body>
+</html>

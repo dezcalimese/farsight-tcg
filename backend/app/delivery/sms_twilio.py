@@ -17,9 +17,8 @@ class TwilioSmsNotifier(Notifier):
     def __init__(self, settings: Settings) -> None:
         self._client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
         self._from_number = settings.twilio_from_number
-        self._to_number = settings.digest_recipient_phone
 
-    async def send_digest(self, subject: str, text_body: str, html_body: str | None) -> bool:
+    async def send_digest(self, to: str, subject: str, text_body: str, html_body: str | None) -> bool:
         body = f"{subject}\n\n{text_body}"
         if len(body) > _MAX_SMS_CHARS:
             body = body[: _MAX_SMS_CHARS - 1].rstrip() + "…"
@@ -28,7 +27,7 @@ class TwilioSmsNotifier(Notifier):
                 self._client.messages.create,
                 body=body,
                 from_=self._from_number,
-                to=self._to_number,
+                to=to,
             )
             return True
         except Exception:

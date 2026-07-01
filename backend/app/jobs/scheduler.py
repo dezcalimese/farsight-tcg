@@ -8,7 +8,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.config import get_settings
 from app.db.session import async_session_factory
 from app.jobs.ingest import run_full_ingest
-from app.jobs.send_digest import send_digest_job
+from app.jobs.send_digest import send_digest_for_cadence
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +20,15 @@ async def _poll_job() -> None:
         logger.info("poll complete: %s", counts)
 
 
-async def _send_job() -> None:
-    results = await send_digest_job()
-    logger.info("digest send complete: %s", results)
+async def _send_daily_job() -> None:
+    # Discord is a community-wide broadcast, not per-subscriber; piggyback it on the daily run.
+    results = await send_digest_for_cadence("daily", include_discord=True)
+    logger.info("daily digest send complete: %s", results)
 
 
-def _digest_trigger(settings) -> CronTrigger:
-    if settings.digest_cadence == "weekly":
-        return CronTrigger(day_of_week=settings.digest_send_weekday, hour=settings.digest_send_hour_utc)
-    return CronTrigger(hour=settings.digest_send_hour_utc)
+async def _send_weekly_job() -> None:
+    results = await send_digest_for_cadence("weekly")
+    logger.info("weekly digest send complete: %s", results)
 
 
 def build_scheduler(poll_interval_minutes: int = 30) -> AsyncIOScheduler:
@@ -40,9 +40,14 @@ def build_scheduler(poll_interval_minutes: int = 30) -> AsyncIOScheduler:
         id="poll_sources",
     )
     scheduler.add_job(
-        _send_job,
-        trigger=_digest_trigger(settings),
-        id="send_digest",
+        _send_daily_job,
+        trigger=CronTrigger(hour=settings.digest_send_hour_utc),
+        id="send_daily_digest",
+    )
+    scheduler.add_job(
+        _send_weekly_job,
+        trigger=CronTrigger(day_of_week=settings.digest_send_weekday, hour=settings.digest_send_hour_utc),
+        id="send_weekly_digest",
     )
     return scheduler
 

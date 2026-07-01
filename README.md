@@ -2,7 +2,7 @@
 
 Pokémon TCG intelligence feed — see `docs/01_PRODUCT_VISION.md`, `docs/02_PRD.md`, and `docs/03_ROADMAP.md` for what this is and the build order. Build strictly follows the roadmap, phase by phase.
 
-**Status: Phase 2 (delivery)** — data spine + digest generator + email/SMS/Discord delivery on a schedule. No UI yet.
+**Status: Phase 3 (signup flow)** — data spine, digest generator, email/SMS/Discord delivery, and a real signup flow (landing page + magic link/OTP + unsubscribe). Full frontend still comes in Phase 4.
 
 ## Local dev
 
@@ -27,8 +27,17 @@ No API key blocks local dev — any source without credentials configured (TCGPl
 ```bash
 cd backend
 uv run python -m scripts.generate_digest 7 --html-out /tmp/digest.html   # generate + review, don't send
-uv run python -m scripts.send_digest_once                                 # generate + actually send
+uv run python -m scripts.send_digest_once daily                           # generate + actually send to active daily subscribers
 ```
+
+### Signup flow
+
+```bash
+cd backend
+uv run uvicorn app.main:app --reload
+```
+
+Then visit `http://localhost:8000/` for the landing page. Email signups get a magic link (via Resend, or logged to the console if `RESEND_API_KEY` isn't set); SMS signups get a 6-digit code (via Twilio, or logged to the console). Every digest includes a personalized unsubscribe link.
 
 ### Running the scheduler
 
@@ -37,7 +46,7 @@ cd backend
 uv run python -m app.jobs.scheduler
 ```
 
-Polls all three sources every 30 minutes, and generates + sends the digest on the configured cadence (`DIGEST_CADENCE`, default daily at `DIGEST_SEND_HOUR_UTC`). Any delivery channel without full credentials falls back to a stub that logs instead of sending.
+Polls all three sources every 30 minutes, sends the daily digest to active daily subscribers at `DIGEST_SEND_HOUR_UTC` (plus the Discord broadcast, if configured), and sends the weekly digest to active weekly subscribers on `DIGEST_SEND_WEEKDAY`. Any delivery channel without full credentials falls back to a stub that logs instead of sending.
 
 ### Migrations
 
@@ -52,14 +61,14 @@ uv run alembic upgrade head
 ```
 backend/
   app/
-    main.py        # FastAPI app (health check only until Phase 4+)
+    main.py        # FastAPI app: landing page + signup API + health check
     config.py       # all env vars, pydantic-settings
     db/              # SQLAlchemy models + async session
     sources/          # PriceSource / NewsSource / RestockSource interfaces + impls
-    digest/            # digest generator (Phase 1+)
-    delivery/            # email/SMS/Discord notifiers (Phase 2+)
-    jobs/                  # scheduled ingestion + digest jobs
-    api/                     # FastAPI routers (Phase 4+)
+    digest/            # digest generator + text/HTML renderers
+    delivery/            # email/SMS/Discord notifiers + magic-link/OTP senders
+    jobs/                  # scheduled ingestion + digest send jobs
+    api/                     # signup/confirm/unsubscribe routes + landing page template
   alembic/                    # migrations
 frontend/                       # not scaffolded until Phase 4
 ```

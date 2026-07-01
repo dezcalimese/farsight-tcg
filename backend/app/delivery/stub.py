@@ -11,6 +11,6 @@ class StubNotifier(Notifier):
     def __init__(self, channel: str) -> None:
         self.name = f"stub-{channel}"
 
-    async def send_digest(self, subject: str, text_body: str, html_body: str | None) -> bool:
-        logger.info("[STUB %s] would send digest: %s (%d chars text)", self.name, subject, len(text_body))
+    async def send_digest(self, to: str, subject: str, text_body: str, html_body: str | None) -> bool:
+        logger.info("[STUB %s] would send to %s: %s (%d chars text)", self.name, to, subject, len(text_body))
         return True

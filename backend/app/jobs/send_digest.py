@@ -1,8 +1,12 @@
 import logging
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config import Settings, get_settings
+from app.db.models import Subscriber
 from app.db.session import async_session_factory
-from app.delivery import get_notifiers
+from app.delivery import get_discord_notifier, get_email_notifier, get_sms_notifier
 from app.digest.generator import generate_digest
 from app.digest.render_html import render_html
 from app.digest.render_text import render_text
@@ -10,23 +14,54 @@ from app.digest.render_text import render_text
 logger = logging.getLogger(__name__)
 
 _PERIOD_LABEL = {1: "Today", 7: "This Week"}
+_CADENCE_PERIOD_DAYS = {"daily": 1, "weekly": 7}
 
 
-async def send_digest_job(settings: Settings | None = None) -> dict[str, bool]:
+async def _active_subscribers(session: AsyncSession, cadence: str) -> list[Subscriber]:
+    result = await session.execute(
+        select(Subscriber).where(Subscriber.status == "active", Subscriber.cadence == cadence)
+    )
+    return list(result.scalars().all())
+
+
+async def send_digest_for_cadence(
+    cadence: str, settings: Settings | None = None, include_discord: bool = False
+) -> dict[str, int]:
+    """Generates one digest for the given cadence and fans it out to every
+    active subscriber on that cadence, plus optionally the Discord broadcast
+    channel (which isn't per-subscriber)."""
     settings = settings or get_settings()
-
-    async with async_session_factory() as session:
-        digest = await generate_digest(session, period_days=settings.digest_period_days)
-
-    text_body = render_text(digest)
-    html_body = render_html(digest)
-    period_label = _PERIOD_LABEL.get(settings.digest_period_days, f"Last {settings.digest_period_days} Days")
+    period_days = _CADENCE_PERIOD_DAYS[cadence]
+    period_label = _PERIOD_LABEL[period_days]
     subject = f"Farsight — {period_label} in Pokemon TCG"
 
-    results: dict[str, bool] = {}
-    for notifier in get_notifiers(settings):
-        ok = await notifier.send_digest(subject, text_body, html_body)
-        results[notifier.name] = ok
-        logger.info("digest send via %s: %s", notifier.name, "ok" if ok else "FAILED")
+    async with async_session_factory() as session:
+        digest = await generate_digest(session, period_days=period_days)
+        subscribers = await _active_subscribers(session, cadence)
 
-    return results
+        email_notifier = get_email_notifier(settings)
+        sms_notifier = get_sms_notifier(settings)
+
+        sent = 0
+        failed = 0
+        for subscriber in subscribers:
+            unsubscribe_url = f"{settings.base_url}/api/unsubscribe?token={subscriber.unsubscribe_token}"
+            text_body = render_text(digest, unsubscribe_url=unsubscribe_url)
+            html_body = render_html(digest, unsubscribe_url=unsubscribe_url)
+
+            if subscriber.channel == "email":
+                ok = await email_notifier.send_digest(subscriber.email, subject, text_body, html_body)
+            else:
+                ok = await sms_notifier.send_digest(subscriber.phone, subject, text_body, html_body)
+
+            sent += 1 if ok else 0
+            failed += 0 if ok else 1
+
+        if include_discord:
+            discord_notifier = get_discord_notifier(settings)
+            text_body = render_text(digest)
+            html_body = render_html(digest)
+            await discord_notifier.send_digest("", subject, text_body, html_body)
+
+    logger.info("digest send (%s): %d subscribers, %d sent, %d failed", cadence, len(subscribers), sent, failed)
+    return {"subscribers": len(subscribers), "sent": sent, "failed": failed}

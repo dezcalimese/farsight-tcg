@@ -16,7 +16,8 @@ class DiscordWebhookNotifier(Notifier):
     def __init__(self, settings: Settings) -> None:
         self._webhook_url = settings.discord_webhook_url
 
-    async def send_digest(self, subject: str, text_body: str, html_body: str | None) -> bool:
+    async def send_digest(self, to: str, subject: str, text_body: str, html_body: str | None) -> bool:
+        # `to` is unused — Discord is a single static broadcast channel, not per-recipient.
         content = f"**{subject}**\n```{text_body}```"
         if len(content) > _MAX_CONTENT_CHARS:
             content = content[: _MAX_CONTENT_CHARS - 4].rstrip() + "...```"

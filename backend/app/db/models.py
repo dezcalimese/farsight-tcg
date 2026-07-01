@@ -103,3 +103,29 @@ class NewsItem(Base):
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+    __table_args__ = (
+        CheckConstraint("channel IN ('email', 'sms')", name="subscriber_channel_valid"),
+        CheckConstraint("cadence IN ('daily', 'weekly')", name="subscriber_cadence_valid"),
+        CheckConstraint(
+            "status IN ('pending_verification', 'active', 'unsubscribed')", name="subscriber_status_valid"
+        ),
+        CheckConstraint("(email IS NOT NULL) != (phone IS NOT NULL)", name="subscriber_exactly_one_contact"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    phone: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True, index=True)
+    channel: Mapped[str] = mapped_column(String(16))  # "email" | "sms"
+    cadence: Mapped[str] = mapped_column(String(16), default="daily")  # "daily" | "weekly"
+    status: Mapped[str] = mapped_column(String(32), default="pending_verification", index=True)
+
+    confirm_token: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True, index=True)
+    confirm_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    unsubscribe_token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

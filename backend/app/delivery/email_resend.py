@@ -15,16 +15,15 @@ class ResendEmailNotifier(Notifier):
     def __init__(self, settings: Settings) -> None:
         resend.api_key = settings.resend_api_key
         self._from_email = settings.resend_from_email
-        self._to_email = settings.digest_recipient_email
 
-    async def send_digest(self, subject: str, text_body: str, html_body: str | None) -> bool:
+    async def send_digest(self, to: str, subject: str, text_body: str, html_body: str | None) -> bool:
         try:
             # resend's SDK is sync; run it off the event loop thread.
             await asyncio.to_thread(
                 resend.Emails.send,
                 {
                     "from": self._from_email,
-                    "to": [self._to_email],
+                    "to": [to],
                     "subject": subject,
                     "text": text_body,
                     "html": html_body or text_body,

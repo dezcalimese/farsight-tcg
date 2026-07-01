@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     env: str = "development"
     database_url: str = "postgresql+asyncpg://farsight:farsight@localhost:5432/farsight"
     redis_url: str = "redis://localhost:6379/0"
+    base_url: str = "http://localhost:8000"  # used to build magic-link/unsubscribe URLs
 
     # TCGPlayer (price source)
     tcgplayer_client_id: str | None = None
@@ -35,19 +36,10 @@ class Settings(BaseSettings):
     twilio_from_number: str | None = None
     discord_webhook_url: str | None = None
 
-    # Digest recipient — until Phase 3's signup flow exists, this is just you.
-    digest_recipient_email: str | None = None
-    digest_recipient_phone: str | None = None  # E.164, e.g. +15551234567
-
-    # Digest cadence: "daily" or "weekly". Weekly sends on digest_send_weekday
-    # (0=Monday). Both send at digest_send_hour_utc.
-    digest_cadence: str = "daily"
+    # Digest send schedule. Each subscriber picks daily or weekly at signup;
+    # these settings only control what time of day/week the two send jobs run.
     digest_send_hour_utc: int = 13
-    digest_send_weekday: int = 0
-
-    @property
-    def digest_period_days(self) -> int:
-        return 7 if self.digest_cadence == "weekly" else 1
+    digest_send_weekday: int = 0  # 0=Monday, for the weekly job
 
     @property
     def news_rss_feed_list(self) -> list[str]:
@@ -69,16 +61,11 @@ class Settings(BaseSettings):
 
     @property
     def resend_configured(self) -> bool:
-        return bool(self.resend_api_key and self.resend_from_email and self.digest_recipient_email)
+        return bool(self.resend_api_key and self.resend_from_email)
 
     @property
     def twilio_configured(self) -> bool:
-        return bool(
-            self.twilio_account_sid
-            and self.twilio_auth_token
-            and self.twilio_from_number
-            and self.digest_recipient_phone
-        )
+        return bool(self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number)
 
     @property
     def discord_webhook_configured(self) -> bool:
