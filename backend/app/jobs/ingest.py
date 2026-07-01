@@ -11,38 +11,42 @@ from app.sources.base import NewsSource, PriceSource, RestockSource
 logger = logging.getLogger(__name__)
 
 
-async def _get_or_create_card(session: AsyncSession, name: str, tcgplayer_product_id: str | None) -> Card:
+async def _get_or_create_card(
+    session: AsyncSession, name: str, tcgplayer_product_id: str | None, image_url: str | None
+) -> Card:
+    card: Card | None = None
     if tcgplayer_product_id:
         result = await session.execute(select(Card).where(Card.tcgplayer_product_id == tcgplayer_product_id))
         card = result.scalar_one_or_none()
-        if card:
-            return card
-    result = await session.execute(select(Card).where(Card.name == name))
-    card = result.scalar_one_or_none()
-    if card:
-        return card
-    card = Card(name=name, set_name="Unknown", tcgplayer_product_id=tcgplayer_product_id)
-    session.add(card)
+    if card is None:
+        result = await session.execute(select(Card).where(Card.name == name))
+        card = result.scalar_one_or_none()
+    if card is None:
+        card = Card(name=name, set_name="Unknown", tcgplayer_product_id=tcgplayer_product_id)
+        session.add(card)
+    if image_url:
+        card.image_url = image_url
     await session.flush()
     return card
 
 
 async def _get_or_create_sealed_product(
-    session: AsyncSession, name: str, tcgplayer_product_id: str | None
+    session: AsyncSession, name: str, tcgplayer_product_id: str | None, image_url: str | None
 ) -> SealedProduct:
+    product: SealedProduct | None = None
     if tcgplayer_product_id:
         result = await session.execute(
             select(SealedProduct).where(SealedProduct.tcgplayer_product_id == tcgplayer_product_id)
         )
         product = result.scalar_one_or_none()
-        if product:
-            return product
-    result = await session.execute(select(SealedProduct).where(SealedProduct.name == name))
-    product = result.scalar_one_or_none()
-    if product:
-        return product
-    product = SealedProduct(name=name, tcgplayer_product_id=tcgplayer_product_id)
-    session.add(product)
+    if product is None:
+        result = await session.execute(select(SealedProduct).where(SealedProduct.name == name))
+        product = result.scalar_one_or_none()
+    if product is None:
+        product = SealedProduct(name=name, tcgplayer_product_id=tcgplayer_product_id)
+        session.add(product)
+    if image_url:
+        product.image_url = image_url
     await session.flush()
     return product
 
@@ -51,10 +55,14 @@ async def ingest_prices(session: AsyncSession, source: PriceSource) -> int:
     points = await source.fetch_prices()
     for point in points:
         if point.item_type == "sealed_product":
-            item = await _get_or_create_sealed_product(session, point.item_name, point.tcgplayer_product_id)
+            item = await _get_or_create_sealed_product(
+                session, point.item_name, point.tcgplayer_product_id, point.image_url
+            )
             snapshot = PriceSnapshot(sealed_product_id=item.id, source=source.name)
         else:
-            item = await _get_or_create_card(session, point.item_name, point.tcgplayer_product_id)
+            item = await _get_or_create_card(
+                session, point.item_name, point.tcgplayer_product_id, point.image_url
+            )
             snapshot = PriceSnapshot(card_id=item.id, source=source.name)
         snapshot.price_low = point.price_low
         snapshot.price_mid = point.price_mid

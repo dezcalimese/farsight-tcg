@@ -1,6 +1,8 @@
 export type PriceMove = {
+  item_id: string;
   item_name: string;
   item_type: "card" | "sealed_product";
+  image_url: string | null;
   price_then: number;
   price_now: number;
   pct_change: number;
@@ -28,6 +30,11 @@ export type DigestData = {
   news: NewsHighlight[];
 };
 
+export type PriceHistoryPoint = {
+  time: number;
+  value: number;
+};
+
 export type Period = "daily" | "weekly";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -38,6 +45,21 @@ export async function getDigestData(period: Period): Promise<DigestData> {
   });
   if (!res.ok) {
     throw new Error(`Failed to load digest data: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getPriceHistory(
+  itemType: "card" | "sealed_product",
+  itemId: string,
+  days: number
+): Promise<PriceHistoryPoint[]> {
+  const res = await fetch(
+    `${API_URL}/api/price-history?item_type=${itemType}&item_id=${itemId}&days=${days}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to load price history: ${res.status}`);
   }
   return res.json();
 }

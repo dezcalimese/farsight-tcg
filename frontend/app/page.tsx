@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { getDigestData, type Period } from "@/lib/api";
-import { EmptyState, MoveRow, NewsRow, RestockRow, SectionCard } from "./components";
+import { EmptyState, NewsRow, RestockRow, SectionCard } from "./components";
+import { MoveRow } from "./move-row";
+import { MoversTabs } from "./movers-tabs";
+import { ThemeSwitcher } from "./theme-switcher";
 
 export default async function DashboardPage({
   searchParams,
@@ -24,31 +27,34 @@ export default async function DashboardPage({
   });
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-8">
-      <header className="mb-6">
-        <h1 className="bg-brand-gradient bg-clip-text text-xl font-bold text-transparent">
-          FARSIGHT
-        </h1>
-        <p className="mt-1 text-sm text-muted">Pokemon TCG market feed &middot; updated {generatedAt}</p>
-      </header>
+    <main className="mx-auto max-w-xl px-3 py-6 sm:px-4 sm:py-8">
+      <div className="glass-frame mb-6 p-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-heading accent-gradient-text text-2xl font-bold">Farsight</h1>
+            <p className="mt-1 text-sm text-muted">
+              Pokemon TCG market feed &middot; updated {generatedAt}
+            </p>
+          </div>
+          <ThemeSwitcher />
+        </div>
 
-      <div className="mb-6 flex gap-2">
-        <Link
-          href="/?period=daily"
-          className={`flex-1 rounded-lg border px-3 py-2 text-center text-sm ${
-            period === "daily" ? "border-[#4f8ff0] text-white" : "border-transparent bg-white/5 text-muted"
-          }`}
-        >
-          Today
-        </Link>
-        <Link
-          href="/?period=weekly"
-          className={`flex-1 rounded-lg border px-3 py-2 text-center text-sm ${
-            period === "weekly" ? "border-[#4f8ff0] text-white" : "border-transparent bg-white/5 text-muted"
-          }`}
-        >
-          This Week
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/?period=daily"
+            data-active={period === "daily"}
+            className="glass-btn flex-1 py-2 text-center text-sm font-medium"
+          >
+            Today
+          </Link>
+          <Link
+            href="/?period=weekly"
+            data-active={period === "weekly"}
+            className="glass-btn flex-1 py-2 text-center text-sm font-medium"
+          >
+            This Week
+          </Link>
+        </div>
       </div>
 
       {isEmpty && <EmptyState />}
@@ -56,17 +62,16 @@ export default async function DashboardPage({
       {digest.trending_cards.length > 0 && (
         <SectionCard title="Trending Cards">
           {digest.trending_cards.map((m) => (
-            <MoveRow key={m.item_name} move={m} />
+            <MoveRow key={m.item_id} move={m} period={period} />
           ))}
         </SectionCard>
       )}
 
       {digest.top_movers.length > 0 && (
-        <SectionCard title="Top Movers">
-          {digest.top_movers.map((m) => (
-            <MoveRow key={m.item_name} move={m} showType />
-          ))}
-        </SectionCard>
+        <section className="mb-6">
+          <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-ink/80">Top Movers</h2>
+          <MoversTabs moves={digest.top_movers} period={period} />
+        </section>
       )}
 
       {digest.restocks.length > 0 && (
@@ -85,7 +90,7 @@ export default async function DashboardPage({
         </SectionCard>
       )}
 
-      <footer className="mt-8 text-xs text-white/40">
+      <footer className="mt-8 text-xs text-muted">
         Want this in your inbox instead?{" "}
         <a href={process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"} className="underline">
           Sign up

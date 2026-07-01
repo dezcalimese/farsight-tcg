@@ -118,6 +118,7 @@ class TCGPlayerPriceSource(PriceSource):
                         price_mid=row.get("midPrice"),
                         price_high=row.get("highPrice"),
                         market_price=row.get("marketPrice"),
+                        image_url=product.get("imageUrl"),
                     )
                 )
             return points

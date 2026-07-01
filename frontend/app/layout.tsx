@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { heading, mono } from "./fonts";
 import "./globals.css";
+import { ThemeProvider } from "./theme-provider";
 
 export const metadata: Metadata = {
   title: "Farsight — Pokemon TCG Intelligence Feed",
@@ -8,8 +10,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-bg text-white antialiased">{children}</body>
+    <html lang="en" data-theme="xatu">
+      <body className={`${heading.variable} ${mono.variable} min-h-screen font-sans antialiased`}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

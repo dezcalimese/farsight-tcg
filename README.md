@@ -67,6 +67,8 @@ bun run dev
 
 Visit `http://localhost:3000`. It's a read-only view of the same `/api/digest-data` endpoint the email/SMS digest is generated from — page-load only, no live updates, so it can never disagree with what gets sent out. The backend must be running (`uv run uvicorn app.main:app --reload` from `backend/`) with `FRONTEND_ORIGIN` set to match (default `http://localhost:3000`, already covers this).
 
+Modern glassmorphic UI with 4 selectable pastel themes (Xatu default, Pikachu, Clefairy, Azumarill), persisted to `localStorage`. Top Movers splits into Cards/Packs tabs. Clicking any card/pack row expands a [liveline](https://www.npmjs.com/package/liveline)-powered price history chart, backed by `GET /api/price-history`. Card/product thumbnails come from TCGPlayer's catalog `imageUrl` when a real `TCGPLAYER_CLIENT_ID`/`SECRET` is configured; otherwise rows show a placeholder icon (stub price source doesn't set images).
+
 ## Repo structure
 
 ```

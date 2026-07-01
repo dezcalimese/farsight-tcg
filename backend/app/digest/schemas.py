@@ -4,8 +4,10 @@ from pydantic import BaseModel
 
 
 class PriceMove(BaseModel):
+    item_id: str
     item_name: str
     item_type: str  # "card" | "sealed_product"
+    image_url: str | None = None
     price_then: float
     price_now: float
     pct_change: float

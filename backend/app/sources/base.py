@@ -16,6 +16,7 @@ class PricePoint:
     price_high: float | None
     market_price: float | None
     currency: str = "USD"
+    image_url: str | None = None
 
 
 @dataclass

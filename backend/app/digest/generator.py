@@ -14,7 +14,7 @@ MAX_NEWS = 2
 
 async def _price_moves(session: AsyncSession, since: datetime) -> list[PriceMove]:
     result = await session.execute(
-        select(PriceSnapshot, Card.name, SealedProduct.name)
+        select(PriceSnapshot, Card.name, Card.image_url, SealedProduct.name, SealedProduct.image_url)
         .outerjoin(Card, PriceSnapshot.card_id == Card.id)
         .outerjoin(SealedProduct, PriceSnapshot.sealed_product_id == SealedProduct.id)
         .where(PriceSnapshot.captured_at >= since)
@@ -24,19 +24,21 @@ async def _price_moves(session: AsyncSession, since: datetime) -> list[PriceMove
 
     # Group snapshots per item, keep first and last seen in the window.
     by_item: dict[tuple[str, str], dict] = {}
-    for snapshot, card_name, sealed_name in result.all():
+    for snapshot, card_name, card_image, sealed_name, sealed_image in result.all():
         if snapshot.card_id:
             key = ("card", str(snapshot.card_id))
-            name = card_name
+            name, image_url = card_name, card_image
         else:
             key = ("sealed_product", str(snapshot.sealed_product_id))
-            name = sealed_name
+            name, image_url = sealed_name, sealed_image
 
-        entry = by_item.setdefault(key, {"name": name, "first": snapshot, "last": snapshot})
+        entry = by_item.setdefault(
+            key, {"name": name, "image_url": image_url, "first": snapshot, "last": snapshot}
+        )
         entry["last"] = snapshot
 
     moves: list[PriceMove] = []
-    for (item_type, _item_id), entry in by_item.items():
+    for (item_type, item_id), entry in by_item.items():
         first, last = entry["first"], entry["last"]
         if first is last:
             continue  # need at least two data points to call it a "move"
@@ -47,8 +49,10 @@ async def _price_moves(session: AsyncSession, since: datetime) -> list[PriceMove
         pct_change = (price_now - price_then) / price_then * 100
         moves.append(
             PriceMove(
+                item_id=item_id,
                 item_name=entry["name"] or "Unknown item",
                 item_type=item_type,
+                image_url=entry["image_url"],
                 price_then=price_then,
                 price_now=price_now,
                 pct_change=round(pct_change, 2),
