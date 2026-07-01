@@ -2,7 +2,7 @@
 
 Pokémon TCG intelligence feed — see `docs/01_PRODUCT_VISION.md`, `docs/02_PRD.md`, and `docs/03_ROADMAP.md` for what this is and the build order. Build strictly follows the roadmap, phase by phase.
 
-**Status: Phase 0 (data spine)** — schema + price/restock/news sources ingesting on a schedule. No UI yet.
+**Status: Phase 2 (delivery)** — data spine + digest generator + email/SMS/Discord delivery on a schedule. No UI yet.
 
 ## Local dev
 
@@ -22,6 +22,14 @@ uv run python -m scripts.print_today    # Phase 0 exit criteria: today's data
 
 No API key blocks local dev — any source without credentials configured (TCGPlayer, Discord) falls back to a stub source that writes clearly-marked fake data so the whole pipeline still runs end-to-end. RSS news requires no key and always runs for real.
 
+### Digest
+
+```bash
+cd backend
+uv run python -m scripts.generate_digest 7 --html-out /tmp/digest.html   # generate + review, don't send
+uv run python -m scripts.send_digest_once                                 # generate + actually send
+```
+
 ### Running the scheduler
 
 ```bash
@@ -29,7 +37,7 @@ cd backend
 uv run python -m app.jobs.scheduler
 ```
 
-Polls all three sources immediately, then every 30 minutes.
+Polls all three sources every 30 minutes, and generates + sends the digest on the configured cadence (`DIGEST_CADENCE`, default daily at `DIGEST_SEND_HOUR_UTC`). Any delivery channel without full credentials falls back to a stub that logs instead of sending.
 
 ### Migrations
 
