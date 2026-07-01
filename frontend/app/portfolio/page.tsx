@@ -11,6 +11,7 @@ import {
   type Portfolio,
   PortfolioApiError,
 } from "@/lib/api";
+import Link from "next/link";
 import { ThemeSwitcher } from "../theme-switcher";
 import { AddHoldingForm } from "./add-holding-form";
 import { AlertRuleForm } from "./alert-rule-form";
@@ -91,6 +92,12 @@ export default function PortfolioPage({
   return (
     <main className="mx-auto max-w-xl px-3 py-6 sm:px-4 sm:py-8">
       <div className="glass-frame mb-6 p-5">
+        <Link
+          href="/"
+          className="glass-btn mb-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"
+        >
+          ← Dashboard
+        </Link>
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-heading accent-gradient-text text-2xl font-bold">
