@@ -94,12 +94,17 @@ export default function PortfolioPage({
   return (
     <main className="mx-auto max-w-xl px-3 py-6 sm:px-4 sm:py-8">
       <div className="glass-frame mb-6 p-5">
-        <Link
-          href="/"
-          className="glass-btn mb-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"
-        >
-          ← Dashboard
-        </Link>
+        <div className="mb-4 flex gap-2">
+          <Link href="/" className="glass-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium">
+            ← Dashboard
+          </Link>
+          <Link
+            href={`/settings?token=${token}`}
+            className="glass-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"
+          >
+            Settings ⚙️
+          </Link>
+        </div>
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-heading accent-gradient-text text-2xl font-bold">

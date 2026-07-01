@@ -2,11 +2,11 @@
 
 A Pokémon TCG intelligence feed. Farsight ingests card/sealed-product prices (TCGPlayer), restock signals (Discord), and news (RSS), then turns them into a periodic digest — trending cards, top movers, restocks, and news — delivered by email, SMS, or Discord on a cadence you pick at signup. No account or dashboard required to get value from it.
 
-On top of the digest sits an optional, deeper layer: a browsable web dashboard, a personal portfolio (holdings, live P&L, a personalized line folded into your digest), and custom alerts (price thresholds, % moves, restock watches) that fire independently of the digest schedule the moment a rule matches. Everything is gated by simple magic-link/OTP tokens — no passwords.
+On top of the digest sits an optional, deeper layer: a browsable web dashboard, a personal portfolio (holdings, live P&L, a personalized line folded into your digest), custom alerts (price thresholds, % moves, restock watches) that fire independently of the digest schedule the moment a rule matches, and a settings page for cadence, channels, and category mutes. Everything is gated by simple magic-link/OTP tokens — no passwords.
 
 See `docs/01_PRODUCT_VISION.md`, `docs/02_PRD.md`, and `docs/03_ROADMAP.md` for the product thinking and phased build order this repo follows.
 
-**Status:** Phases 0–6 complete — data spine, digest generation, email/SMS/Discord delivery, signup flow, dashboard, portfolio, and custom alerts. Phase 7 (settings) is the only thing left on the roadmap.
+**Status:** all 7 roadmap phases complete — data spine, digest generation, email/SMS/Discord delivery, signup flow, dashboard, portfolio, custom alerts, and settings.
 
 ## Local dev
 
@@ -91,6 +91,17 @@ Set up on the portfolio page (same `portfolio_token`, no separate login). Three 
 
 `app/jobs/alerts.py` evaluates every rule on its own schedule (`ALERT_CHECK_INTERVAL_MINUTES`), completely independent of the digest cron jobs, and fires immediately through the same email/SMS notifiers the digest uses. Price/% rules are edge-triggered via an `is_armed` flag on `AlertRule` — once fired, a rule won't refire while the condition stays true; it rearms the moment the condition clears, so a real second crossing fires again. Restock rules dedupe via a `last_triggered_at` watermark instead, since restocks are discrete events rather than a continuous level.
 
+### Settings
+
+Visit `http://localhost:3000/settings?token=<portfolio_token>` (linked from the portfolio page) to manage:
+
+- **Cadence** — switch between daily and weekly at any time
+- **Digest categories** — mute trending cards/top movers, restocks, or news independently; muted sections are stripped from that subscriber's digest before it's rendered (`app/jobs/send_digest.py`'s `_filtered_for_subscriber`), so it's applied per-send, not just cosmetically
+- **Delivery channels** — a subscriber can enable email, SMS, or both at once. Adding a second channel goes through the same magic-link (email) / OTP (SMS) verification as initial signup; toggling an already-verified channel off/on is instant. At least one channel must stay enabled (enforced both in the API and as a DB check constraint)
+- **Account deletion** — `DELETE /api/account` removes the subscriber row, cascading to their holdings and alert rules; digests and alerts stop immediately
+
+Discord intentionally isn't a per-subscriber channel option — it's a single community-wide broadcast webhook (see Custom alerts / delivery above), not a per-user DM, so there's nothing subscriber-specific to toggle.
+
 ## Repo structure
 
 ```
@@ -103,10 +114,11 @@ backend/
     digest/            # digest generator + text/HTML renderers
     delivery/            # email/SMS/Discord notifiers + magic-link/OTP senders
     jobs/                  # scheduled ingestion + digest send jobs
-    api/                     # signup/confirm/unsubscribe/dashboard/portfolio routes + landing page template
+    api/                     # signup/confirm/unsubscribe/dashboard/portfolio/alerts/settings routes + landing page
   alembic/                    # migrations
 frontend/                        # Next.js 14 App Router (Phase 4+)
   app/                            # dashboard page + layout + theme system
-  app/portfolio/                   # token-gated portfolio page (Phase 5)
+  app/portfolio/                   # token-gated portfolio + alerts page (Phase 5-6)
+  app/settings/                     # token-gated settings page (Phase 7)
   lib/                               # API client / types shared with backend DigestData
 ```

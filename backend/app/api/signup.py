@@ -65,7 +65,8 @@ async def signup(
 
     if subscriber is None:
         subscriber = Subscriber(
-            channel=body.channel,
+            email_enabled=body.channel == "email",
+            sms_enabled=body.channel == "sms",
             cadence=body.cadence,
             status="pending_verification",
             unsubscribe_token=generate_unsubscribe_token(),
@@ -117,10 +118,12 @@ async def confirm(
     subscriber.confirm_token_expires_at = None
     await session.commit()
 
+    channel_label = "email" if subscriber.email_enabled else "text"
     portfolio_url = f"{settings.frontend_origin}/portfolio?token={subscriber.portfolio_token}"
     return _render_message(
-        f"You're in. Farsight digests will arrive by {subscriber.channel} on a {subscriber.cadence} cadence. "
-        f'<br><br>Want to track your own cards? <a href="{portfolio_url}">Set up your portfolio</a>.'
+        f"You're in. Farsight digests will arrive by {channel_label} on a {subscriber.cadence} cadence. "
+        f'<br><br>Want to track your own cards, set alerts, or change your preferences? '
+        f'<a href="{portfolio_url}">Go to your portfolio</a>.'
     )
 
 

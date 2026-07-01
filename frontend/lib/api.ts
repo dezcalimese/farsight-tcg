@@ -196,3 +196,74 @@ export async function deleteAlert(token: string, ruleId: string): Promise<void> 
   });
   if (!res.ok) throw new PortfolioApiError("Couldn't remove that alert.");
 }
+
+export type SettingsData = {
+  email: string | null;
+  phone: string | null;
+  email_enabled: boolean;
+  sms_enabled: boolean;
+  cadence: Period;
+  mute_movers: boolean;
+  mute_restocks: boolean;
+  mute_news: boolean;
+  pending_channel: "email" | "sms" | null;
+};
+
+async function _settingsRequest(
+  path: string,
+  token: string,
+  init?: RequestInit
+): Promise<SettingsData> {
+  const res = await fetch(`${API_URL}${path}?token=${encodeURIComponent(token)}`, {
+    cache: "no-store",
+    headers: init?.body ? { "Content-Type": "application/json" } : undefined,
+    ...init,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new PortfolioApiError(data.detail ?? "Something went wrong.");
+  }
+  return res.json();
+}
+
+export function getSettings(token: string): Promise<SettingsData> {
+  return _settingsRequest("/api/settings", token);
+}
+
+export function updateSettings(
+  token: string,
+  body: Partial<Pick<SettingsData, "cadence" | "mute_movers" | "mute_restocks" | "mute_news">>
+): Promise<SettingsData> {
+  return _settingsRequest("/api/settings", token, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+export function toggleChannels(
+  token: string,
+  body: Partial<Pick<SettingsData, "email_enabled" | "sms_enabled">>
+): Promise<SettingsData> {
+  return _settingsRequest("/api/settings/channels", token, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+export function addChannel(
+  token: string,
+  body: { channel: "email" | "sms"; contact: string }
+): Promise<SettingsData> {
+  return _settingsRequest("/api/settings/channels/add", token, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function confirmSmsChannel(token: string, code: string): Promise<SettingsData> {
+  return _settingsRequest("/api/settings/channels/confirm-sms", token, {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function deleteAccount(token: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/account?token=${encodeURIComponent(token)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new PortfolioApiError("Couldn't delete your account.");
+}
