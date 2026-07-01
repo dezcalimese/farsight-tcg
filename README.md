@@ -1,8 +1,12 @@
 # Farsight
 
-Pokémon TCG intelligence feed — see `docs/01_PRODUCT_VISION.md`, `docs/02_PRD.md`, and `docs/03_ROADMAP.md` for what this is and the build order. Build strictly follows the roadmap, phase by phase.
+A Pokémon TCG intelligence feed. Farsight ingests card/sealed-product prices (TCGPlayer), restock signals (Discord), and news (RSS), then turns them into a periodic digest — trending cards, top movers, restocks, and news — delivered by email, SMS, or Discord on a cadence you pick at signup. No account or dashboard required to get value from it.
 
-**Status: Phase 6 (custom alerts)** — data spine, digest generator, email/SMS/Discord delivery, signup flow, browsable dashboard, portfolio (holdings, P&L, personalized digest line), and a real-time alert rule engine independent of the digest schedule.
+On top of the digest sits an optional, deeper layer: a browsable web dashboard, a personal portfolio (holdings, live P&L, a personalized line folded into your digest), and custom alerts (price thresholds, % moves, restock watches) that fire independently of the digest schedule the moment a rule matches. Everything is gated by simple magic-link/OTP tokens — no passwords.
+
+See `docs/01_PRODUCT_VISION.md`, `docs/02_PRD.md`, and `docs/03_ROADMAP.md` for the product thinking and phased build order this repo follows.
+
+**Status:** Phases 0–6 complete — data spine, digest generation, email/SMS/Discord delivery, signup flow, dashboard, portfolio, and custom alerts. Phase 7 (settings) is the only thing left on the roadmap.
 
 ## Local dev
 
